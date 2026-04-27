@@ -2,5 +2,5 @@ streamlit
 pandas
 plotly
 pydantic
-openai
 yfinance
+anthropic

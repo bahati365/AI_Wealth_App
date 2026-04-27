@@ -1,22 +1,27 @@
 import os
-from openai import OpenAI
+from anthropic import Anthropic
+
 from src.models import PortfolioRecommendation
 
 
 class ExplanationEngine:
     def __init__(self):
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("ANTHROPIC_API_KEY")
 
         if api_key:
-            self.client = OpenAI(api_key=api_key)
+            self.client = Anthropic(api_key=api_key)
         else:
             self.client = None
+
     def generate(self, recommendation: PortfolioRecommendation) -> str:
+        if self.client is None:
+            return self._fallback_explanation(recommendation)
+
         profile = recommendation.profile
         allocation = recommendation.allocation
 
         prompt = f"""
-You are an educational AI wealth advisor simulator.
+You are an educational wealth advisor simulator.
 
 Explain this portfolio recommendation in plain English.
 
@@ -33,22 +38,22 @@ Portfolio allocation:
 - Cash: {allocation["Cash"]}%
 
 Rules:
-- Do not say this is guaranteed.
-- Do not give personalized licensed financial advice.
+- Do not say returns are guaranteed.
+- Do not give licensed financial advice.
 - Explain tradeoffs clearly.
-- Mention that this is educational only.
-- Keep it short and practical.
+- Keep it short, practical, and beginner-friendly.
+- Mention this is educational only.
 """
 
-        if self.client is None:
-            return self._fallback_explanation(recommendation)
-
-        response = self.client.responses.create(
-            model="gpt-4.1-mini",
-            input=prompt,
+        response = self.client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=350,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
         )
 
-        return response.output_text
+        return response.content[0].text
 
     def _fallback_explanation(self, recommendation: PortfolioRecommendation) -> str:
         profile = recommendation.profile
@@ -63,5 +68,5 @@ Recommended allocation:
 - **Bonds:** {allocation["Bonds"]}%
 - **Cash:** {allocation["Cash"]}%
 
-This explanation is currently using the fallback rule-based version because no OpenAI API key was found.
+This is using the fallback explanation because no Claude API key was found.
 """
