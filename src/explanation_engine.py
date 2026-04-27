@@ -1,11 +1,12 @@
 import os
 import streamlit as st
 from anthropic import Anthropic
+from typing import Optional
 
 from src.models import PortfolioRecommendation
 
 
-def get_anthropic_api_key() -> str | None:
+def get_anthropic_api_key() -> Optional [str]:
     # Local development
     api_key = os.getenv("ANTHROPIC_API_KEY")
 
