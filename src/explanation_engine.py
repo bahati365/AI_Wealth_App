@@ -1,7 +1,29 @@
 import os
+import streamlit as st
 from anthropic import Anthropic
 
 from src.models import PortfolioRecommendation
+
+
+def get_anthropic_api_key() -> str | None:
+    # Local development
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+
+    # Streamlit Cloud deployment
+    if not api_key:
+        api_key = st.secrets.get("ANTHROPIC_API_KEY", None)
+
+    return api_key
+
+
+class ExplanationEngine:
+    def __init__(self):
+        api_key = get_anthropic_api_key()
+
+        if api_key:
+            self.client = Anthropic(api_key=api_key)
+        else:
+            self.client = None
 
 
 class ExplanationEngine:
