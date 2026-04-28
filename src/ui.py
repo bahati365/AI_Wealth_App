@@ -7,6 +7,8 @@ from src.portfolio_engine import PortfolioEngine, ETF_MAPPING
 from src.explanation_engine import ExplanationEngine
 from src.market_data import MarketDataService
 
+st.set_page_config(layout="wide")
+
 
 ETF_DESCRIPTIONS = {
     "VTI": "Tracks the total US stock market, giving broad diversification and long-term growth potential.",
@@ -80,6 +82,7 @@ def render_recommendation(profile: ClientProfile) -> None:
         st.dataframe(
             allocation_df,
             use_container_width=True,
+            height=200,
             hide_index=True
         )
 
