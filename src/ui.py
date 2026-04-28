@@ -20,44 +20,6 @@ ETF_DESCRIPTIONS = {
 }
 
 
-def render_sidebar() -> tuple[ClientProfile, bool]:
-    st.sidebar.header("Client Profile")
-
-    profile = ClientProfile(
-        age_range=st.sidebar.selectbox(
-            "Age Range",
-            ["18–25", "26–35", "36–45", "46–60", "60+"]
-        ),
-        investment_purpose=st.sidebar.selectbox(
-            "What are you investing for?",
-            [
-                "Emergency fund",
-                "Buying a car",
-                "Down payment",
-                "Education",
-                "Retirement",
-                "Building wealth",
-                "Passive income",
-            ]
-        ),
-        goal=st.sidebar.selectbox(
-            "Investment Style",
-            ["Preserve money", "Balanced growth", "Aggressive growth", "Income"]
-        ),
-        risk_tolerance=st.sidebar.selectbox(
-            "Risk Tolerance",
-            ["Low", "Medium", "High"]
-        ),
-        time_horizon=st.sidebar.selectbox(
-            "Time Horizon",
-            ["0–2 years", "3–5 years", "6–10 years", "10+ years"]
-        ),
-    )
-
-    generate = st.sidebar.button("Generate Portfolio")
-    return profile, generate
-
-
 def render_recommendation(profile: ClientProfile) -> None:
     portfolio_engine = PortfolioEngine()
     explanation_engine = ExplanationEngine()
@@ -70,30 +32,39 @@ def render_recommendation(profile: ClientProfile) -> None:
         "Allocation (%)": list(recommendation.allocation.values()),
     })
 
-    col1, col2 = st.columns(2)
+    st.success("Your personalized portfolio is ready.")
 
-    with col1:
+    # Top section: table + pie chart side by side
+    table_col, chart_col = st.columns([1, 1])
+
+    with table_col:
         st.subheader("Recommended Portfolio")
-        st.dataframe(allocation_df, use_container_width=True)
+        st.dataframe(
+            allocation_df,
+            use_container_width=True,
+            hide_index=True
+        )
 
-    with col2:
+    with chart_col:
         st.subheader("Portfolio Allocation")
         fig = px.pie(
             allocation_df,
             values="Allocation (%)",
             names="Asset Class",
         )
+        fig.update_layout(
+            margin=dict(t=20, b=20, l=20, r=20),
+            height=350
+        )
         st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("Why This Portfolio?")
+    # Advisor explanation below
+    st.divider()
+    st.subheader("Advisor Explanation")
+    st.write(explanation_engine.generate(recommendation))
 
-    st.write(
-        f"""
-        You are investing for **{profile.investment_purpose.lower()}** with a **{profile.time_horizon.lower()}** time horizon.
-        Your selected style is **{profile.goal.lower()}** and your risk tolerance is **{profile.risk_tolerance.lower()}**.
-        """
-    )
-
+    # Portfolio ETF performance below
+    st.divider()
     st.subheader("Your Portfolio – Market Performance")
 
     for asset, weight in recommendation.allocation.items():
@@ -102,37 +73,40 @@ def render_recommendation(profile: ClientProfile) -> None:
         if ticker is None:
             continue
 
-        st.write(f"### {asset} ({ticker}) — {weight}%")
-        st.caption(ETF_DESCRIPTIONS.get(ticker, ""))
+        with st.container(border=True):
+            st.markdown(f"### {asset} ({ticker}) — {weight}%")
+            st.caption(ETF_DESCRIPTIONS.get(ticker, ""))
 
-        try:
-            price_history = market_data_service.get_price_history(
-                ticker=ticker,
-                period="1y"
-            )
+            try:
+                price_history = market_data_service.get_price_history(
+                    ticker=ticker,
+                    period="1y"
+                )
 
-            chart_data = price_history[["Date", "Close"]].dropna()
-            chart_data = chart_data.set_index("Date")
+                chart_data = price_history[["Date", "Close"]].dropna()
+                chart_data = chart_data.set_index("Date")
 
-            latest_price = round(float(chart_data["Close"].iloc[-1]), 2)
-            one_year_return = (
-                (chart_data["Close"].iloc[-1] / chart_data["Close"].iloc[0]) - 1
-            ) * 100
+                latest_price = round(float(chart_data["Close"].iloc[-1]), 2)
+                one_year_return = (
+                    (chart_data["Close"].iloc[-1] / chart_data["Close"].iloc[0]) - 1
+                ) * 100
 
-            metric_col1, metric_col2 = st.columns(2)
+                metric_col1, metric_col2 = st.columns(2)
 
-            with metric_col1:
-                st.metric(f"{ticker} Latest Price", f"${latest_price}")
+                with metric_col1:
+                    st.metric(f"{ticker} Latest Price", f"${latest_price}")
 
-            with metric_col2:
-                st.metric(f"{ticker} 1Y Return", f"{one_year_return:.2f}%")
+                with metric_col2:
+                    st.metric(f"{ticker} 1Y Return", f"{one_year_return:.2f}%")
 
-            st.line_chart(chart_data)
+                st.line_chart(chart_data)
 
-        except Exception as error:
-            st.error(f"Error loading {ticker}: {error}")
+            except Exception as error:
+                st.error(f"Error loading {ticker}: {error}")
 
-    st.subheader("Research Another Investment")
+    # Research dropdown moved to bottom
+    st.divider()
+    st.subheader("Explore Other Investments")
 
     ticker_options = {
         "S&P 500 ETF (SPY)": "SPY",
@@ -154,10 +128,11 @@ def render_recommendation(profile: ClientProfile) -> None:
 
     if st.button("Fetch Market Data"):
         try:
-            price_history = market_data_service.get_price_history(
-                ticker=selected_ticker,
-                period="1y"
-            )
+            with st.spinner(f"Fetching data for {selected_name}..."):
+                price_history = market_data_service.get_price_history(
+                    ticker=selected_ticker,
+                    period="1y"
+                )
 
             chart_data = price_history[["Date", "Close"]].dropna()
             chart_data = chart_data.set_index("Date")
@@ -184,14 +159,11 @@ def render_recommendation(profile: ClientProfile) -> None:
             st.caption(ETF_DESCRIPTIONS.get(selected_ticker, ""))
             st.line_chart(chart_data)
 
-            st.write("Recent price data:")
-            st.dataframe(price_history.tail(), use_container_width=True)
+            with st.expander("View recent price data"):
+                st.dataframe(price_history.tail(), use_container_width=True)
 
         except Exception as error:
             st.error(f"Could not fetch market data: {error}")
-
-    st.subheader("Advisor Explanation")
-    st.write(explanation_engine.generate(recommendation))
 
     st.warning(
         "Disclaimer: This is an educational simulation only and is not financial advice."
