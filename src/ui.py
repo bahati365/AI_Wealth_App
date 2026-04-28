@@ -30,6 +30,17 @@ def render_sidebar() -> tuple[ClientProfile, bool]:
             "Age Range",
             ["18–25", "26–35", "36–45", "46–60", "60+"]
         ),
+        monthly_income=st.sidebar.number_input(
+            "Monthly Income ($)",
+            min_value=0.0,
+            value=3000.0,
+            step=100.0
+        ),
+        monthly_expenses=st.sidebar.number_input(
+            "Monthly Expenses ($)",
+            min_value=0.0,
+            value=2000.0,
+            step=100.0),
         investment_purpose=st.sidebar.selectbox(
             "What are you investing for?",
             [
@@ -100,6 +111,34 @@ def render_recommendation(profile: ClientProfile) -> None:
         st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
+
+    monthly_surplus = profile.monthly_income - profile.monthly_expenses
+
+    st.subheader("Monthly Investment Capacity")
+
+    if monthly_surplus <= 0:
+        st.error(
+            "Based on your income and expenses, you may not have extra monthly cash flow to invest right now."
+        )
+    else:
+        suggested_investment = monthly_surplus * 0.5
+        savings_buffer = monthly_surplus * 0.5
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric("Monthly Income", f"${profile.monthly_income:,.0f}")
+
+        with col2:
+            st.metric("Monthly Expenses", f"${profile.monthly_expenses:,.0f}")
+
+        with col3:
+            st.metric("Available Surplus", f"${monthly_surplus:,.0f}")
+
+        st.info(
+            f"A reasonable starting point could be investing around **${suggested_investment:,.0f}/month** "
+            f"while keeping about **${savings_buffer:,.0f}/month** for savings, debt repayment, or emergency needs."
+        )
 
     # Explanation
     st.subheader("Advisor Explanation")
