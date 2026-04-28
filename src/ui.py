@@ -93,7 +93,6 @@ def render_recommendation(profile: ClientProfile) -> None:
         st.dataframe(
             allocation_df,
             use_container_width=True,
-            height=200,
             hide_index=True
         )
 
