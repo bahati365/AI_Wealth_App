@@ -10,7 +10,7 @@ from src.market_data import MarketDataService
 
 ETF_DESCRIPTIONS = {
     "VTI": "Tracks the total US stock market, giving broad diversification and long-term growth potential.",
-    "BND": "Provides exposure to US bonds, helping reduce volatility and add income/stability.",
+    "BND": "Provides exposure to US bonds, helping reduce volatility and adding income/stability.",
     "SHV": "Focuses on short-term US Treasury bills, useful for liquidity and capital preservation.",
     "SPY": "Tracks the S&P 500, representing many of the largest US companies.",
     "QQQ": "Tracks the Nasdaq-100, with higher exposure to technology and growth companies.",
@@ -18,6 +18,44 @@ ETF_DESCRIPTIONS = {
     "MSFT": "Microsoft is a major software, cloud, and AI infrastructure company.",
     "NVDA": "Nvidia is a major semiconductor company tied strongly to AI and GPU demand.",
 }
+
+
+def render_sidebar() -> tuple[ClientProfile, bool]:
+    st.sidebar.header("Client Profile")
+
+    profile = ClientProfile(
+        age_range=st.sidebar.selectbox(
+            "Age Range",
+            ["18–25", "26–35", "36–45", "46–60", "60+"]
+        ),
+        investment_purpose=st.sidebar.selectbox(
+            "What are you investing for?",
+            [
+                "Emergency fund",
+                "Buying a car",
+                "Down payment",
+                "Education",
+                "Retirement",
+                "Building wealth",
+                "Passive income",
+            ]
+        ),
+        goal=st.sidebar.selectbox(
+            "Investment Style",
+            ["Preserve money", "Balanced growth", "Aggressive growth", "Income"]
+        ),
+        risk_tolerance=st.sidebar.selectbox(
+            "Risk Tolerance",
+            ["Low", "Medium", "High"]
+        ),
+        time_horizon=st.sidebar.selectbox(
+            "Time Horizon",
+            ["0–2 years", "3–5 years", "6–10 years", "10+ years"]
+        ),
+    )
+
+    generate = st.sidebar.button("Generate Portfolio")
+    return profile, generate
 
 
 def render_recommendation(profile: ClientProfile) -> None:
@@ -34,7 +72,7 @@ def render_recommendation(profile: ClientProfile) -> None:
 
     st.success("Your personalized portfolio is ready.")
 
-    # Top section: table + pie chart side by side
+    # Top: table + pie chart side by side
     table_col, chart_col = st.columns([1, 1])
 
     with table_col:
@@ -54,17 +92,19 @@ def render_recommendation(profile: ClientProfile) -> None:
         )
         fig.update_layout(
             margin=dict(t=20, b=20, l=20, r=20),
-            height=350
+            height=350,
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # Advisor explanation below
     st.divider()
+
+    # Explanation
     st.subheader("Advisor Explanation")
     st.write(explanation_engine.generate(recommendation))
 
-    # Portfolio ETF performance below
     st.divider()
+
+    # ETF performance
     st.subheader("Your Portfolio – Market Performance")
 
     for asset, weight in recommendation.allocation.items():
@@ -104,8 +144,9 @@ def render_recommendation(profile: ClientProfile) -> None:
             except Exception as error:
                 st.error(f"Error loading {ticker}: {error}")
 
-    # Research dropdown moved to bottom
     st.divider()
+
+    # Bottom: research dropdown
     st.subheader("Explore Other Investments")
 
     ticker_options = {
