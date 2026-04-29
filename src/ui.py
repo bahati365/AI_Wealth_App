@@ -134,11 +134,15 @@ def render_recommendation(profile: ClientProfile) -> None:
         with col3:
             st.metric("Available Surplus", f"${monthly_surplus:,.0f}")
 
-        st.info(
-            f"A reasonable starting point could be investing around **${suggested_investment:,.0f}/month** "
-            f"while keeping about **${savings_buffer:,.0f}/month** for savings, debt repayment, or emergency needs."
-        )
-
+    st.markdown(
+        f"""
+    <div style="background-color:#e6f0ff; padding:15px; border-radius:10px;">
+    A reasonable starting point could be investing around <b>${suggested_investment:,.0f}/month</b>
+    while keeping about <b>${savings_buffer:,.0f}/month</b> for savings, debt repayment, or emergency needs.
+    </div>
+    """,
+        unsafe_allow_html=True
+    )
     # Explanation
     st.subheader("Advisor Explanation")
     st.write(explanation_engine.generate(recommendation))
